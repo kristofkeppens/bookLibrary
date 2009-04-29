@@ -1,0 +1,5 @@
+; $Id$
+name = bookLibrary-contenttype
+description = Drupal Module that creates the content type books for the bookLibrary module, enable this first.
+core = 6.x
+package = Book library

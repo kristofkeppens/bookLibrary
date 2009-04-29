@@ -1,0 +1,291 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Creates a book content type for the bookLibrary module
+ */
+
+/**
+ * Implementation of hook_node_info().
+ */
+
+function bookLibrary_contenttype_node_info() {
+  return array(
+    'book' => array(
+      'name' => t('Book'),
+      'module' => 'bookLibrary-contenttype',
+      'description' => t('Create a book'),
+      'has_title' => true,
+      'title_label' => t('Title'),
+      'has_body' => true,
+      'body_label' => t('Review'),
+      'locked' => true,
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_perm().
+ */
+ 
+function bookLibrary_contenttype_perm() {
+  return array('create book', 'edit own book', 'edit book', 'delete own book', 'delete book');
+}
+
+/**
+ * Implementation of hook_access().
+ */
+
+function bookLibrary_contenttype_access($op, $node, $account) {
+  $is_author = $account->uid == $node->uid;
+  switch($op) {
+    case 'create':
+      //allow if user has perm create book
+      return user_access('create book', $account);
+    case 'update':
+      //allow if user has edit own book or edit book
+      return user_access('edit own book', $account) && $is_author ||
+        user_access('edit book', $account);
+    case 'delete': 
+      return user_access('delete own book', $account) && $is_author ||
+        user_access('delete book', $account);
+  }
+}
+
+/**
+ * Implementation of hook_form().
+ */
+
+function bookLibrary_contenttype_form(&$node) {
+  $type = node_get_types('type', $node);
+  
+  $form['title'] = array(
+    '#type' => 'textfield',
+    '#title' => check_plain($type->title_label),
+    '#required' => true,
+    '#default_value' => $node->title,
+    '#weight' => -5,
+    '#maxlength' => 255,
+  );
+    $form['subtitle'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Subtitle'),
+    '#required' => true,
+    '#default_value' => isset($node->subtitle) ? $node->subtitle : '',
+    '#weight' => 0,
+  );
+  $form['isbn'] = array(
+    '#type' => 'int',
+    '#title' => t('Isbn'),
+    '#required' => true,
+    '#default_value' => isset($node->isbn) ? $node->isbn : '',
+    '#weight' => 0,
+  );
+    $form['author'] = array(
+    '#type' => 'textfield',
+    '#title' => t('author'),
+    '#required' => true,
+    '#default_value' => isset($node->author) ? $node->author : '',
+    '#weight' => 0,
+  );
+    $form['publishers'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Publishers'),
+    '#required' => true,
+    '#default_value' => isset($node->publishers) ? $node->publishers : '',
+    '#weight' => 0,
+  );
+    $form['image_small'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Image small url'),
+    '#required' => true,
+    '#default_value' => isset($node->image_small) ? $node->image_small : '',
+    '#weight' => 0,
+  );
+      $form['image_medium'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Image medium url'),
+    '#required' => true,
+    '#default_value' => isset($node->image_medium) ? $node->image_medium : '',
+    '#weight' => 0,
+  );
+      $form['image_large'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Image large url'),
+    '#required' => true,
+    '#default_value' => isset($node->image_large) ? $node->image_large : '',
+    '#weight' => 0,
+  );
+      $form['pages_total'] = array(
+    '#type' => 'int',
+    '#title' => t('total nr of pages'),
+    '#required' => true,
+    '#default_value' => isset($node->pages_total) ? $node->pages_total : '',
+    '#weight' => 0,
+  );
+      $form['publication_date'] = array(
+    '#type' => 'int',
+    '#title' => t('Publication date'),
+    '#required' => true,
+    '#default_value' => isset($node->publication_date) ? $node->publication_date : '',
+    '#weight' => 0,
+  );
+      $form['book_link'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Book page link'),
+    '#required' => true,
+    '#default_value' => isset($node->book_link) ? $node->book_link : '',
+    '#weight' => 0,
+  );
+      $form['recommended'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Recommended book'),
+    '#options' => array('recommended' => t('Recommended')),
+    '#weight' => 0,
+  );
+      $form['body_filter']['body'] = array(
+    '#type' => 'textarea',
+    '#title' => check_plain($type->body_label),
+    '#required' => true,
+    '#default_value' => $node->body,
+    '#weight' => 0,
+    '#rows' => 7,
+  );
+    $form['body_filter']['filter'] = filter_form($node->format);
+    
+    echo var_dump($form);
+    exit;
+  return $form;
+}
+
+/**
+ * Implementation of hook_validate()
+ */
+
+function bookLibrary_contenttype_validate($node) {
+  //isbn number must be 10 or 13 digits
+  if(isset($node->isbn) && (str_word_count($node->isbn) != 10 || str_word_count($node->isbn != 13))) {
+    $type = node_get_types('type', $node);
+    form_set_error('isbn', t('The isbn number must be 10 or 13 digits long', array('@type' => $type->name)));
+  }
+}
+
+/**
+ * Implementation of hook_insert()
+ */
+
+function bookLibrary_contenttype_insert($node) {
+  db_query("INSERT INTO {bookLibrary} (nid, vid, bid, isbn, title, subtitle,"
+  	." author, publishers, image_small, image_medium, image_large, pages_total,"
+  	." publication_date, book_link, review, recommended) VALUES"
+  	."(%d, %d, %d, %d, %s, %s, %s, %s, %s, %s, %s, %d, %s, %s, %s, %d)",
+  	$node->nid, $node->vid, $node->bid, $node->isbn, $node->title, $node->subtitle,
+  	$node->author, $node->publishers, $node->image_small, $node->image_medium, $node->image_large,
+  	$node->pages_total, $node->publication_date, $node->book_link, $node->review, $node->recommended );
+}
+
+/**
+ * Implementation of hook_update().
+ */
+
+function bookLibrary_contenttype_update($node) {
+  if($node->revision) {
+    bookLibrary_insert($node);
+  } else {
+    db_query("UPDATE {bookLibrary} SET isbn = %d, title = '%s', subtitle = '%s',"
+  	." author = '%s', publishers = '%s', image_small = '%s', image_medium = '%s', image_large = '%s', pages_total = %d,"
+  	." publication_date = '%s', book_link = '%s', review = '%s', recommended = %d)"
+  	." WHERE vid = %d",
+  	$node->isbn, $node->title, $node->subtitle,
+  	$node->author, $node->publishers, $node->image_small, $node->image_medium, $node->image_large,
+  	$node->pages_total, $node->publication_date, $node->book_link, $node->review, $node->recommended, $node->vid );
+  }
+}
+
+/**
+ * Implementation of hook_delete()
+ */
+
+function bookLibrary_contenttype_delete(&$node) {
+  db_query('DELETE FROM {bookLibrary} WHERE nid = %d', $node->nid);
+}
+
+/**
+ * Implementation of hook_load()
+ */
+
+function bookLibrary_contenttype_load($node) {
+  return db_fetch_object(db_query('SELECT isbn, title, subtitle, author, publishers, image_small'
+    .'image_medium, image_large, pages_total, publication_date, book_link, review, recommended'
+    .'FROM {bookLibrary} WHERE vid = %d', $node->vid));
+}
+
+/**
+ * Implementation of hook_view().
+ */
+
+function bookLibrary_contenttype_view($node, $teaser = FALSE, $page = FALSE) {
+  if(!$teaser) {
+    $node = node_prepare($node, $teaser);
+    
+    $node->content['body'] = array(
+      '#value' => $teaser ? $node->teaser : theme('bookLibrary', $node, $teaser, $page),
+      '#weight' => 1,
+    );
+    
+/*    $node->content['isbn'] = array(
+      '#value' => theme('bookLibrary_isbn', $node),
+      '#weight' => -5,
+    );
+    $node->content['subtitle'] = array(
+      '#value' => theme('bookLibrary_subtitle', $node),
+      '#weight' => -5,
+    );
+    $node->content['author'] = array(
+      '#value' => theme('bookLibrary_author', $node),
+      '#weight' => -5,
+    );
+    $node->content['publishers'] = array(
+      '#value' => theme('bookLibrary_publishers', $node),
+      '#weight' => -5,
+    );
+    $node->content['image_large'] = array(
+      '#value' => theme('bookLibrary_image_large', $node),
+      '#weight' => -5,
+    );
+    $node->content['pages_total'] = array(
+      '#value' => theme('bookLibrary_pages_total', $node),
+      '#weight' => -5,
+    );
+    $node->content['book_link'] = array(
+      '#value' => theme('bookLibrary_book_link', $node),
+      '#weight' => -5,
+    );
+    $node->content['recommended'] = array(
+      '#value' => theme('bookLibrary_recommended', $node),
+      '#weight' => -5,
+    );*/
+    
+  }
+  
+  if($teaser) {
+    $node = node_prepare($node, $teaser);
+  }
+  
+  return $node;
+}
+
+/**
+ * Implementation of hook_theme()
+ */
+
+function bookLibrary_contenttype_theme() {
+  return array(
+    'bookLibrary' => array(
+      'template'=> 'bookLibrary',
+      'arguments' => array('node' => null, 'teaser' => false, 'page' => false)
+    ),
+  );
+}
+
