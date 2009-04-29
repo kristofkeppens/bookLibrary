@@ -1,0 +1,5 @@
+; $Id$
+name = bookLibrary-block
+description = Drupal Module that creates blocks for the bookLibrary module
+core = 6.x
+package = Book library

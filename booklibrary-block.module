@@ -1,0 +1,41 @@
+<?php 
+/**
+ * Implementation of hook_block()
+ * 
+ * this creates a block with the latest added book.
+ * 
+ * TODO create a block with recommended books, books can be flagged as recommended
+ * 
+ * @param $op
+ * @param $delta
+ * @param $edit
+ * @return unknown_type
+ */
+function bookLibrary_block($op ='list', $delta = 0, $edit=array()) {
+  switch ($op) {
+    case 'list': 
+      $blocks[0]['info'] = t('Last read');
+      $blocks[0]['cache'] = BLOCK_NO_CACHE;
+      return $blocks;
+    case 'view': 
+   
+        $sql = "SELECT title, author, image_medium, book_link, bid FROM {bookLibrary} ORDER BY bid DESC LIMIT 1";
+        $result = db_query($sql);
+        $book = db_fetch_object($result);
+        $book_info[] = $book->title;
+        $book_info[] = $book->author;
+        $book_info[] = $book->image_medium;
+        $book_info[] = $book->book_link;
+        //echo var_dump($book_info);
+        //echo var_dump($book);
+        //exit;
+        $block['subject'] = t('Last read');
+        $block['content'] .= '<h4>'.$book->title.'</h4>';
+        $block['content'] .= '<img src="'.$book->image_medium.'"/>';
+        $block['content'] .= '<br /><a href="'.$book->book_link.'">meer</a>';
+        
+      
+      return $block;
+  }
+}
+

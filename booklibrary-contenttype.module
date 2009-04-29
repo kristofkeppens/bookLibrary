@@ -1,0 +1,63 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Creates a book content type for the bookLibrary module
+ */
+
+/**
+ * Implementation of hook_node_info().
+ */
+
+function bookLibrary_node_info() {
+  return array(
+    'book' => array(
+      'name' => t('Book'),
+      'module' => 'bookLibrary-contenttype',
+      'description' => t('Create a book'),
+      'has_title' => true,
+      'title_label' => t('Title'),
+      'has_body' => true,
+      'body_label' => t('Review'),
+      'locked' => true,
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_perm().
+ */
+ 
+function bookLibrary_perm() {
+  return array('create book', 'edit own book', 'edit book', 'delete own book', 'delete book');
+}
+
+/**
+ * Implementation of hook_access().
+ */
+
+function bookLibrary_access($op, $node, $account) {
+  $is_author = $account->uid == $node->uid;
+  switch($op) {
+    case 'create':
+      //allow if user has perm create book
+      return user_access('create book', $account);
+    case 'update':
+      //allow if user has edit own book or edit book
+      return user_access('edit own book', $account) && $is_author ||
+        user_access('edit book', $account);
+    case 'delete': 
+      return user_access('delete own book', $account) && $is_author ||
+        user_access('delete book', $account);
+  }
+}
+
+/**
+ * Implementation of hook_form().
+ */
+
+function bookLibrary_ct_form($node) {
+  
+}
+
