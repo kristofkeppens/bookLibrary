@@ -1,0 +1,5 @@
+; $Id$
+name = bookLibrary
+description = Drupal Module that creates a book library of books read by the user. Currently only giving a latest read block ...
+core = 6.x
+package = Book library

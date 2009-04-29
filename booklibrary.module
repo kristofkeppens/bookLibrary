@@ -1,0 +1,306 @@
+<?php
+// $Id$
+/**
+ * bookLibrary Module.
+ * Module that creates a personal library of books
+ * Currently only a latest read block is implemented 
+ * TODO create a recommended readings block
+ * TODO convert books to a content type
+ * TODO create a listing of books
+ * TODO add amazon support for retrieving book information
+ * TODO clean up code
+ * 
+ * @file
+ */
+
+/**
+ * Implementation of hook_menu().
+ * Adds a menu item to the admin site
+ * to add an isbn number.
+ * 
+ * @return $items
+ */
+
+function bookLibrary_menu() {
+  $items['admin/bookLibrary/add'] = array(
+    'title' => 'bookLibrary add isbn',
+    'description' => 'add book to bookLibrary module',
+    'page callback' => 'bookLibrary_add_page',
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  
+  return $items;
+}
+
+/**
+ * Menu callback
+ * Callback from the menu item, creates
+ * a page and gets the form for the 
+ * insertion of the isbn number.
+ */
+
+function bookLibrary_add_page() {
+  $output = t('Add book to recommended reading');
+  
+  $output .= drupal_get_form('bookLibrary_addform');
+  return $output;
+}
+
+/**
+ * add isbn number form
+ * simple form with one field for 
+ * the isbn number
+ */
+ 
+function bookLibrary_addform() {
+  $form['isbn'] = array(
+    '#title' => t('Isbn Book number'),
+  	'#type' => 'textfield',
+    '#description' => t('Add the isbn number for the book that will be displayed in the recommended reading'),
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Enter'),
+  );
+  
+  return $form;
+}
+
+/**
+ * Implementation of hook_submit
+ * On submit the isbn number gets stored locally
+ * the function get_bookdata is called with the
+ * isbn number and retrieved data from that function
+ * gets stored in $book_data.
+ * This object gets saved through the saveBook function
+ * that gets this object as an argument.
+ */
+ 
+function bookLibrary_addform_submit($form, &$form_state) {
+  $isbn = $form_state['values']['isbn'];
+  
+  $book_data = get_bookdata($isbn);
+  saveBook($book_data);
+  
+  //echo $isbn;
+  //echo var_dump($book_data);
+  //exit;
+  
+
+}
+
+/**
+ * function get_bookdata
+ * this function retrieves the bookdata when it's given
+ * a isbn number. The information is retrieved from the 
+ * openLibrary site. 
+ * The isbn number gets cleaned up and checked if it's in
+ * the isbn-10 format or isbn-13 format.
+ * The resulting book information is returned by this function
+ * @param $isbn
+ * @return array
+ */
+function get_bookdata($isbn) {
+  
+  //clean up isbn number
+  $isbn = str_replace('-', '', $isbn);
+  $isbn = str_replace(' ', '', $isbn);
+  
+  //echo var_dump($isbn);
+  
+  //check if the isbn number is available
+  if(!is_null($isbn)) {
+    switch (strlen($isbn)) {
+      case 10: 
+        // if isbn-10 format this is the url to get the versions from openLibrary
+        $url_bookkeys = "http://openlibrary.org/api/things?&query=".urlencode('{"type":"/type/edition", "isbn_10":"'.$isbn.'"}');
+        break;
+      case 13:
+        //if isbn-13 format this is the url to get the versions from openLibrary
+        $url_bookkeys = "http://openlibrary.org/api/things?&query=".urlencode('{"type":"/type/edition", "isbn_13":"'.$isbn.'"}'); 
+        break;
+    }
+  }
+  //query openLibrary
+  
+  //echo var_dump($url_bookkeys);
+  $bookkeys = get_url_contents($url_bookkeys, $curltimeout);
+  //echo var_dump($bookkeys);
+  $obj = json_decode($bookkeys);
+  $bookkeyresult = $obj->{'result'};
+  
+  //echo var_dump($bookkeyresult);
+  
+  //determine number of versions and choose first available version if none specified
+  
+  $bookversioncount = count($bookkeyresult);
+  if($bookversion == '') $bookversion = 1;
+  elseif ($bookversion > $bookversioncount) $bookversion = $bookversioncount;
+  $bookversion = $bookversion-1;
+  
+  $bookkey = $bookkeyresult[$bookversion];
+  
+  $bookpage = 'http://openlibrary.org' .$bookkey;
+  $curltimeout = 10;
+  $url = 'http://openlibrary.org/api/get?key='.$bookkey.'&text=true';
+  $bookdata = get_url_contents($url, $curltimeout);
+  
+  $obj = json_decode($bookdata);
+  $bookdataresult = $obj->{'result'};
+  //echo var_dump($bookdataresult);
+  
+  //isbn
+  $book_info['isbn'] = $isbn;
+  
+  //title
+  $book_info['title'] = $bookdataresult->{'title'};
+  
+  //subtitle
+  $book_info['subtitle'] = $bookdataresult->{'subtitle'};
+  
+  //authors -- handle multiple
+  $book_info['authors'] = $bookdataresult->{'subjects'};
+
+
+  //publishers
+  $book_info['publishers'] = $bookdataresult->{'publishers'};
+  
+  //coverimage
+  
+  $olnumber_begin = stripos($bookkey, "/b/") + 3;
+  $olnumber = substr($bookkey, $olnumber_begin);
+  
+  $size = getimagesize("http://covers.openlibrary.org/b/olid/$olnumber-M.jpg");
+  if($size[0] == 1){
+    //TODO code for covers when no cover exists
+  } else {
+    $img_small  = array('URL' => 'http://covers.openlibrary.org/b/olid/'.$olnumber.'-S.jpg?default=http://wiki-beta.us.archive.org/static/images/blank.book.png');
+    $img_medium = array('URL' => 'http://covers.openlibrary.org/b/olid/'.$olnumber.'-M.jpg?default=http://wiki-beta.us.archive.org/static/images/blank.book.png');
+    $img_large  = array('URL' => 'http://covers.openlibrary.org/b/olid/'.$olnumber.'-L.jpg?default=http://wiki-beta.us.archive.org/static/images/blank.book.png');
+				
+    $book_info['images'] = array('small'  => $img_small,
+	                           'medium' => $img_medium,
+	                           'large'  => $img_large);
+  }
+
+  //pagination
+  $book_info['pages_total'] = $bookdataresult->{'number_of_pages'};
+
+  //publication date
+  $book_info['public_date'] = $bookdataresult->{'publish_date'};
+
+  //link to book
+  $book_info['book_link'] = 'http://openlibrary.org/b/'.$olnumber;
+  
+  return $book_info;
+  
+  
+}
+
+/**
+ * function get_url_contents
+ * this function gets the content from the openLibrary site
+ * with cURL.
+ * TODO support when cURL not available
+ * @param $url
+ * @param $curltimeout
+ * @return unknown_type
+ */
+function get_url_contents($url, $curltimeout) {
+  $ch = curl_init($url);
+  
+  curl_setopt($ch, CURLOPT_HEADER, false);
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+  curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $curltimeout);
+  curl_setopt($ch, CURLOPT_TIMEOUT, $curltimeout);
+  
+  //execute request
+  $output = curl_exec($ch);
+  
+  //close cURL session
+  curl_close($ch);
+  
+  if($output == '') throw new Exception("open library data unavailable");
+  
+  return $output;
+}
+
+/**
+ * function saveBook
+ * 
+ * function to save the book data to the database.
+ * 
+ * TODO save book data to a book node instead 
+ * 
+ * @param $bookdata
+ * @return unknown_type
+ */
+function saveBook($bookdata) {
+  
+  $book_info = $bookdata;
+  //echo var_dump($book_info);
+  //TODO save the book to the database ..
+  //TODO check if the record allready exists
+  
+  $table = 'bookLibrary';
+  $record = new stdClass();
+  $record->isbn = $book_info['isbn'];
+  $record->title = $book_info['title'];
+  $record->subtitle = $book_info['subtitle'];
+  $record->author = $book_info['authors'][0];
+  $record->publishers = $book_info['publishers'][0];
+  $record->image_small = $book_info['images']['small']['URL'];
+  $record->image_medium = $book_info['images']['medium']['URL'];
+  $record->image_large = $book_info['images']['large']['URL'];
+  $record->pages_total = $book_info['pages_total'];
+  $record->publication_date = $book_info['publication_date'];
+  $record->book_link = $book_info['book_link'];
+  //echo var_dump($book_info['authors'][0]);
+  //echo var_dump($book_info['images']);
+  drupal_write_record($table, $record);
+  
+  
+  
+}
+
+/**
+ * Implementation of hook_block()
+ * 
+ * this creates a block with the latest added book.
+ * 
+ * TODO create a block with recommended books, books can be flagged as recommended
+ * 
+ * @param $op
+ * @param $delta
+ * @param $edit
+ * @return unknown_type
+ */
+function bookLibrary_block($op ='list', $delta = 0, $edit=array()) {
+  switch ($op) {
+    case 'list': 
+      $blocks[0]['info'] = t('Last read');
+      $blocks[0]['cache'] = BLOCK_NO_CACHE;
+      return $blocks;
+    case 'view': 
+   
+        $sql = "SELECT title, author, image_medium, book_link, bid FROM {bookLibrary} ORDER BY bid DESC LIMIT 1";
+        $result = db_query($sql);
+        $book = db_fetch_object($result);
+        $book_info[] = $book->title;
+        $book_info[] = $book->author;
+        $book_info[] = $book->image_medium;
+        $book_info[] = $book->book_link;
+        //echo var_dump($book_info);
+        //echo var_dump($book);
+        //exit;
+        $block['subject'] = t('Last read');
+        $block['content'] .= '<h4>'.$book->title.'</h4>';
+        $block['content'] .= '<img src="'.$book->image_medium.'"/>';
+        $block['content'] .= '<br /><a href="'.$book->book_link.'">meer</a>';
+        
+      
+      return $block;
+  }
+}
+

@@ -1,0 +1,127 @@
+<?php
+// $Id$
+
+/**
+ * Install the bookLibrary module
+ * @file
+ */
+
+/**
+ * Implementation of hook_install().
+ */
+ 
+function bookLibrary_install() {
+  drupal_install_schema('bookLibrary');
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+ 
+function bookLibrary_uninstall() {
+  drupal_uninstall_schema('bookLibrary');
+}
+
+/**
+ * Implementation of hook_scheme().
+ * 
+ * @return $schema
+ */
+
+function bookLibrary_schema() {
+  $schema['bookLibrary'] = array(
+    'fields' => array(
+    'bid' => array(
+      'type' => 'serial',
+      'unsigned' => true,
+      'not null' => true,  
+    ),
+    'isbn' => array(
+      'type' => 'int',
+      'unsigned' => TRUE,
+      'not null' => TRUE,
+      'default' => 0,
+    ),
+    'title' => array(
+      'type' => 'varchar',
+      'length' => 255,
+      'not null' => TRUE,
+      'default' => '',
+    ),  
+    'subtitle' => array(
+      'type' => 'varchar',
+      'length' => 255,
+      'not null' => TRUE,
+      'default' => '',
+    ),
+    'author' => array(
+      'type' => 'varchar',
+      'length' => 255,
+      'not null' => true,
+      'default' => '',  
+    ),
+    'publishers' => array(
+      'type' => 'varchar',
+      'length' => 255,
+      'not null' => true,
+      'default' => '',
+    ),
+    'image_small' => array(
+      'type' => 'varchar',
+      'length' => 255,
+      'not null' => true,
+      'default' => '',
+    ),
+    'image_medium' => array(
+      'type' => 'varchar',
+      'length' => 255,
+      'not null' => true,
+      'default' => '',
+    ),
+    'image_large' => array(
+      'type' => 'varchar',
+      'length' => 255,
+      'not null' => true,
+      'default' => '',
+    ),
+    'pages_total' => array(
+      'type' => 'int',
+      'not null' => true,
+      'default' => 0,
+    ),
+    'publication_date' => array(
+      'type' => 'varchar',
+      'length' => 255,
+      'not null' => true,
+      'default' => '',
+    ),
+    'book_link' => array(
+      'type' => 'varchar',
+      'length' => 255,
+      'not null' => true,
+      'default' => '',
+    ),
+    'review' => array(
+      'type' => 'text',
+      'size' => 'big',
+      'default' => '',
+    ),
+    'recommended' => array(
+      'type' => 'int',
+      'unsigned' => true,
+      'size' => 'small',
+      'not null' => true,
+      'default' => 0,
+    ),
+    ),
+    
+    'unique keys' => array(
+      'isbn' => array('isbn'),
+    ),
+    
+    'primary key' => array('bid'),
+  );
+  
+  return $schema;
+   
+}
