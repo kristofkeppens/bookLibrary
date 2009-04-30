@@ -65,7 +65,7 @@ function bookLibrary_contenttype_form(&$node, $form_state) {
     '#title' => check_plain($type->title_label),
     '#required' => true,
     '#default_value' => $node->title,
-    '#weight' => -5,
+    '#weight' => -25,
     '#maxlength' => 255,
   );
     $form['subtitle'] = array(
@@ -73,21 +73,21 @@ function bookLibrary_contenttype_form(&$node, $form_state) {
     '#title' => t('Subtitle'),
     '#required' => true,
     '#default_value' => isset($node->subtitle) ? $node->subtitle : '',
-    '#weight' => 0,
+    '#weight' => -20,
   );
   $form['isbn'] = array(
     '#type' => 'int',
     '#title' => t('Isbn'),
     '#required' => true,
     '#default_value' => isset($node->isbn) ? $node->isbn : '',
-    '#weight' => 0,
+    '#weight' => -15,
   );
     $form['author'] = array(
     '#type' => 'textfield',
-    '#title' => t('author'),
+    '#title' => t('Author'),
     '#required' => true,
     '#default_value' => isset($node->author) ? $node->author : '',
-    '#weight' => 0,
+    '#weight' => -15,
   );
     $form['publishers'] = array(
     '#type' => 'textfield',
