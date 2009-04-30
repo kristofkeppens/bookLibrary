@@ -217,7 +217,7 @@ function bookLibrary_contenttype_delete(&$node) {
 
 function bookLibrary_contenttype_load($node) {
   return db_fetch_object(db_query('SELECT isbn, title, subtitle, author, publishers, image_small'
-    .'image_medium, image_large, pages_total, publication_date, book_link, review, recommended'
+    .' image_medium, image_large, pages_total, publication_date, book_link, review, recommended'
     .' FROM {bookLibrary} WHERE vid = %d', $node->vid));
 }
 
