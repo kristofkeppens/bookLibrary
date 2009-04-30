@@ -243,7 +243,7 @@ function saveBook($bookdata) {
   //TODO save the book to the database ..
   //TODO check if the record allready exists
   
-  $table = 'bookLibrary';
+/*  $table = 'bookLibrary';
   $record = new stdClass();
   $record->isbn = $book_info['isbn'];
   $record->title = $book_info['title'];
@@ -258,7 +258,28 @@ function saveBook($bookdata) {
   $record->book_link = $book_info['book_link'];
   //echo var_dump($book_info['authors'][0]);
   //echo var_dump($book_info['images']);
-  drupal_write_record($table, $record);
+  drupal_write_record($table, $record);*/
+  
+  $form_state= array();
+  module_load_include('inc', 'node', 'node.pages');
+  $node = array('type' => 'book');
+  
+  $form_state['title'] = $book_info['title'];
+  $form_state['isbnnr'] = $book_info['isbn'];
+  $form_state['subtitle'] = $book_info['subtitle'];
+  $form_state['authors'] = $book_info['authors'][0];
+  $form_state['publishers'] = $book_info['publishers'][0];
+  $form_state['image_small'] = $book_info['images']['small']['URL'];
+  $form_state['image_medium'] = $book_info['images']['medium']['URL'];
+  $form_state['image_large'] = $book_info['images']['large']['URL'];
+  $form_state['pages_total'] = $book_info['pages_total'];
+  $form_state['publication_date'] = $book_info['publication_date'];
+  $form_state['book_link'] = $book_info['book_link'];
+  
+  $form_state['op'] = t('Save');
+  //print_r($form_state);
+  //exit;
+  drupal_execute('bookLibrary_contenttype_form', $form_state, $node);
   
   
   

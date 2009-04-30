@@ -57,7 +57,7 @@ function bookLibrary_contenttype_access($op, $node, $account) {
  * Implementation of hook_form().
  */
 
-function bookLibrary_contenttype_form(&$node, $form_state) {
+function bookLibrary_contenttype_form(&$node) {
   $type = node_get_types('type', $node);
   
   $form['title'] = array(
@@ -75,18 +75,18 @@ function bookLibrary_contenttype_form(&$node, $form_state) {
     '#default_value' => isset($node->subtitle) ? $node->subtitle : '',
     '#weight' => -20,
   );
-  $form['isbn'] = array(
-    '#type' => 'int',
-    '#title' => t('Isbn'),
+  $form['isbnnr'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Isbn Number'),
     '#required' => true,
     '#default_value' => isset($node->isbn) ? $node->isbn : '',
-    '#weight' => -15,
+    '#weight' => -25,
   );
-    $form['author'] = array(
+    $form['authors'] = array(
     '#type' => 'textfield',
     '#title' => t('Author'),
     '#required' => true,
-    '#default_value' => isset($node->author) ? $node->author : '',
+    '#default_value' => isset($node->subtitle) ? $node->subtitle : '',
     '#weight' => -15,
   );
     $form['publishers'] = array(
@@ -125,9 +125,9 @@ function bookLibrary_contenttype_form(&$node, $form_state) {
     '#weight' => 0,
   );
       $form['publication_date'] = array(
-    '#type' => 'int',
+    '#type' => 'textfield',
     '#title' => t('Publication date'),
-    '#required' => true,
+    '#required' => false,
     '#default_value' => isset($node->publication_date) ? $node->publication_date : '',
     '#weight' => 0,
   );
@@ -147,7 +147,7 @@ function bookLibrary_contenttype_form(&$node, $form_state) {
       $form['body_filter']['body'] = array(
     '#type' => 'textarea',
     '#title' => check_plain($type->body_label),
-    '#required' => true,
+    '#required' => false,
     '#default_value' => $node->body,
     '#weight' => 0,
     '#rows' => 7,
@@ -218,7 +218,7 @@ function bookLibrary_contenttype_delete(&$node) {
 function bookLibrary_contenttype_load($node) {
   return db_fetch_object(db_query('SELECT isbn, title, subtitle, author, publishers, image_small'
     .'image_medium, image_large, pages_total, publication_date, book_link, review, recommended'
-    .'FROM {bookLibrary} WHERE vid = %d', $node->vid));
+    .' FROM {bookLibrary} WHERE vid = %d', $node->vid));
 }
 
 /**
